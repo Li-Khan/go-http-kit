@@ -19,6 +19,7 @@ type HttpKit struct {
 	MethodNotAllowedHandler http.HandlerFunc
 	// middlewares - List of middlewares to apply to all routes
 	middlewares []Middleware
+	cors        *CORS
 }
 
 // New creates a new instance of HttpKit.
@@ -32,24 +33,41 @@ func New() *HttpKit {
 	}
 }
 
-// Mux configures and returns the http.ServeMux for handling HTTP requests.
+// Mux configures and returns the http.ServeMux for handling HTTP requests by iterating over defined routes.
 func (hk *HttpKit) Mux() *http.ServeMux {
 	for _, route := range hk.routes {
-		handler := route.handler
-		for i := len(route.middlewares) - 1; i >= 0; i-- {
-			handler = route.middlewares[i](handler)
-		}
-
-		for i := len(route.group.middlewares) - 1; i >= 0; i-- {
-			handler = route.group.middlewares[i](handler)
-		}
-
-		for i := len(hk.middlewares) - 1; i >= 0; i-- {
-			handler = hk.middlewares[i](handler)
-		}
-		hk.mux.HandleFunc(route.pattern, hk.methodMiddleware(handler, route.method))
+		handler := hk.configureRoute(route)
+		hk.mux.HandleFunc(route.pattern, handler)
 	}
 	return hk.mux
+}
+
+func (hk *HttpKit) Cors(c *CORS) *HttpKit {
+	hk.cors = c
+	return hk
+}
+
+// configureRoute applies middlewares and configurations to a route's handler function.
+// It returns the configured handler for the route.
+func (hk *HttpKit) configureRoute(route *Route) func(http.ResponseWriter, *http.Request) {
+	handler := route.handler
+	for i := len(route.middlewares) - 1; i >= 0; i-- {
+		handler = route.middlewares[i](handler)
+	}
+
+	for i := len(route.group.middlewares) - 1; i >= 0; i-- {
+		handler = route.group.middlewares[i](handler)
+	}
+
+	for i := len(hk.middlewares) - 1; i >= 0; i-- {
+		handler = hk.middlewares[i](handler)
+	}
+
+	handler = hk.methodMiddleware(handler, route.method)
+	if hk.cors != nil {
+		handler = hk.cors.Middleware(handler)
+	}
+	return handler
 }
 
 // methodMiddleware returns a middleware that checks if the incoming request uses the correct HTTP method.
