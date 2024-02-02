@@ -15,9 +15,7 @@ type CORS struct {
 
 // DefaultCORS is the default CORS configuration with some predefined values.
 var DefaultCORS = &CORS{
-	allowedOrigins: map[string]struct{}{
-		"http://localhost:3000": {},
-	},
+	allowedOrigins: make(map[string]struct{}),
 	allowedMethods: strings.Join([]string{
 		http.MethodHead,
 		http.MethodGet,

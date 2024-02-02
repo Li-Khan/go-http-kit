@@ -1,6 +1,9 @@
 package go_http_kit
 
-import "net/http"
+import (
+	"log"
+	"net/http"
+)
 
 // Group represents a group of routes with a common URL pattern and middlewares.
 type Group struct {
@@ -30,19 +33,46 @@ func (hk *HttpKit) Group(pattern string, middlewares ...Middleware) *Group {
 // GroupFunc creates a new group with the specified URL pattern, executes the provided function, and applies middlewares.
 func (hk *HttpKit) GroupFunc(pattern string, f func(g *Group), middlewares ...Middleware) *Group {
 	g := &Group{
-		hk:      hk,
-		pattern: pattern,
+		hk:          hk,
+		pattern:     pattern,
+		middlewares: middlewares,
 	}
 	hk.mu.Lock()
 	hk.groupRoutes = append(hk.groupRoutes, g)
 	hk.mu.Unlock()
 	f(g)
-	g.Middleware(middlewares...)
+	return g
+}
+
+func (g *Group) Group(pattern string, middlewares ...Middleware) *Group {
+	group := &Group{
+		hk:          g.hk,
+		pattern:     g.pattern + pattern,
+		middlewares: append(g.middlewares, middlewares...),
+	}
+	g.hk.mu.Lock()
+	g.hk.groupRoutes = append(g.hk.groupRoutes, group)
+	g.hk.mu.Unlock()
+	return g
+}
+
+func (g *Group) GroupFunc(pattern string, f func(g *Group), middlewares ...Middleware) *Group {
+	group := &Group{
+		hk:      g.hk,
+		pattern: g.pattern + pattern,
+	}
+	group.middlewares = append(group.middlewares, g.middlewares...)
+	group.middlewares = append(group.middlewares, middlewares...)
+	g.hk.mu.Lock()
+	g.hk.groupRoutes = append(g.hk.groupRoutes, group)
+	g.hk.mu.Unlock()
+	f(group)
 	return g
 }
 
 // GET method for creating a new GET route with the specified pattern and handler.
 func (g *Group) GET(pattern string, handler func(http.ResponseWriter, *http.Request)) *Route {
+	log.Println(g.pattern + pattern)
 	return g.hk.addRoute(g.pattern+pattern, http.MethodGet, handler, g)
 }
 

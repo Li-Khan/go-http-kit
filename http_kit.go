@@ -51,16 +51,23 @@ func (hk *HttpKit) Cors(c *CORS) *HttpKit {
 // It returns the configured handler for the route.
 func (hk *HttpKit) configureRoute(route *Route) func(http.ResponseWriter, *http.Request) {
 	handler := route.handler
-	for i := len(route.middlewares) - 1; i >= 0; i-- {
-		handler = route.middlewares[i](handler)
+
+	if route.middlewares != nil {
+		for i := len(route.middlewares) - 1; i >= 0; i-- {
+			handler = route.middlewares[i](handler)
+		}
 	}
 
-	for i := len(route.group.middlewares) - 1; i >= 0; i-- {
-		handler = route.group.middlewares[i](handler)
+	if route.group != nil {
+		for i := len(route.group.middlewares) - 1; i >= 0; i-- {
+			handler = route.group.middlewares[i](handler)
+		}
 	}
 
-	for i := len(hk.middlewares) - 1; i >= 0; i-- {
-		handler = hk.middlewares[i](handler)
+	if hk.middlewares != nil {
+		for i := len(hk.middlewares) - 1; i >= 0; i-- {
+			handler = hk.middlewares[i](handler)
+		}
 	}
 
 	handler = hk.methodMiddleware(handler, route.method)
