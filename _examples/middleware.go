@@ -27,9 +27,7 @@ func main() {
 	// Apply middleware globally
 	ghk.Middleware(middleware1, middleware2)
 
-	ghk.GET("/", func(rw http.ResponseWriter, r *http.Request) {
-		_, _ = rw.Write([]byte("Hello, Middleware!"))
-	})
+	ghk.GET("/", hello)
 
 	err := http.ListenAndServe(":8080", ghk.Mux())
 	if err != nil {

@@ -18,9 +18,7 @@ func main() {
 
 	ghk.Cors(cors)
 
-	ghk.GET("/", func(rw http.ResponseWriter, r *http.Request) {
-		_, _ = rw.Write([]byte("Hello, CORS!"))
-	})
+	ghk.GET("/", hello)
 
 	err := http.ListenAndServe(":8080", ghk.Mux())
 	if err != nil {
