@@ -55,6 +55,9 @@ func (cors *CORS) Middleware(next http.HandlerFunc) http.HandlerFunc {
 				break
 			}
 		}
+		if len(cors.allowedOrigins) == 0 {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+		}
 		w.Header().Set("Access-Control-Allow-Methods", cors.allowedMethods)
 		w.Header().Set("Access-Control-Allow-Headers", cors.allowedHeaders)
 		w.Header().Set("Access-Control-Expose-Headers", cors.exposeHeaders)
@@ -123,6 +126,7 @@ func (cors *CORS) AddExposeHeaders(headers ...string) *CORS {
 
 // SetAllowedOrigins sets allowed origins to the CORS configuration.
 func (cors *CORS) SetAllowedOrigins(origins ...string) *CORS {
+	cors.allowedOrigins = make(map[string]struct{})
 	for _, origin := range origins {
 		cors.allowedOrigins[origin] = struct{}{}
 	}
